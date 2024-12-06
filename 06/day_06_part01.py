@@ -2,9 +2,16 @@ import curses
 import random
 import time
 
-# Constants for the game board size
-BOARD_WIDTH = 25
-BOARD_HEIGHT = 25
+FILE = 'input.txt'
+
+def read_and_parse_file(input_file = FILE):
+    matrix = []
+    with open(input_file, encoding='utf-8') as f:
+        line = f.readline()
+        while line != '':
+            matrix.append(list(line.strip()))
+            line = f.readline()
+        return matrix
 
 def robot_move(stdscr, direction, did_collide, cursor_y, cursor_x):
     time.sleep(0.1)
@@ -15,35 +22,42 @@ def robot_move(stdscr, direction, did_collide, cursor_y, cursor_x):
     if direction == 'v':
         return curses.KEY_LEFT if did_collide else curses.KEY_DOWN
     if direction == '<':
-        return curses.KEY_UP if did_collide else curses.KEY_RIGHT
+        return curses.KEY_UP if did_collide else curses.KEY_LEFT
 
 # default move function
 def get_move(stdscr, direction, did_collide, cursor_y, cursor_x):
     return stdscr.getch()
 
-def generate_board(pad):
-    # Place random obstacles ('#' characters) on the board
-    NUM_OBSTACLES = 45
-    for _ in range(NUM_OBSTACLES):
-        rand_y = random.randint(0, BOARD_HEIGHT - 1)
-        rand_x = random.randint(0, BOARD_WIDTH - 1)
-        pad.addch(rand_y, rand_x, '#')
+def generate_board():
+    board = read_and_parse_file()
+    board_height = len(board) + 1
+    board_width = len(board[0]) + 1
+    start_pos_y = 0
+    start_pos_x = 0
+    start_direction_char = '^'
+    pad = curses.newpad(board_height, board_width)
 
-def game_loop(stdscr, start_pos_y, start_pos_x, start_direction_char, move_func = get_move):
-    num_dots_eaten = 0
-    direction = start_direction_char
+    for y in range(board_height - 1):
+        for x in range(board_width - 1):
+            board_char = board[y][x]
+            if board_char in ('^', 'v', '>', '<'):
+                start_pos_y, start_pos_x = y,x
+                start_direction_char = board_char
+            pad.addch(y, x, board_char)
+    return pad, board_height, board_width, start_pos_y, start_pos_x, start_direction_char
+
+
+def game_loop(stdscr, move_func = get_move):
+    num_dots_eaten = 1
     screen_h, screen_w = stdscr.getmaxyx()
-    view_height = min(screen_h, BOARD_HEIGHT)
-    view_width = min(screen_w, BOARD_WIDTH)
-    pad = curses.newpad(BOARD_HEIGHT, BOARD_WIDTH)
+    
+    pad, board_height, board_width, start_pos_y, start_pos_x, start_direction_char = generate_board()
+    direction = start_direction_char
+
+    view_height = min(screen_h, board_height)
+    view_width = min(screen_w, board_width)
+    
     curses.curs_set(False)
-
-    # Fill the board
-    for y in range(BOARD_HEIGHT - 1):
-        for x in range(BOARD_WIDTH - 1):
-            pad.addch(y, x, '.')
-
-    generate_board(pad)
 
     # Cursor position
     cursor_y, cursor_x = start_pos_y, start_pos_x
@@ -59,30 +73,31 @@ def game_loop(stdscr, start_pos_y, start_pos_x, start_direction_char, move_func 
 
         # Get move
         key = move_func(stdscr, direction, did_collide, cursor_y, cursor_x)
-        did_collide = False
 
+        did_collide = False
+        
         new_y, new_x = cursor_y, cursor_x
         exit_board = False
         if key == curses.KEY_UP:
-            if new_y <= 0:
-                exit_board = True
             direction = '^'
             new_y -= 1
-        elif key == curses.KEY_DOWN:
-            if new_y >= BOARD_HEIGHT - 1:
+            if new_y < 0:
                 exit_board = True
+        elif key == curses.KEY_DOWN:
             direction = 'v'
             new_y += 1
-        elif key == curses.KEY_LEFT:
-            if new_x <= 0:
+            if new_y >= board_height - 1:
                 exit_board = True
+        elif key == curses.KEY_LEFT:
             direction = '<'
             new_x -= 1
-        elif key == curses.KEY_RIGHT:
-            if new_x >= BOARD_WIDTH - 1:
+            if new_x < 0:
                 exit_board = True
+        elif key == curses.KEY_RIGHT:
             direction = '>'
             new_x += 1
+            if new_x >= board_width - 1:
+                exit_board = True
         
         if key == ord('q') or exit_board:  # Quit the game
             return num_dots_eaten
@@ -101,6 +116,5 @@ def game_loop(stdscr, start_pos_y, start_pos_x, start_direction_char, move_func 
         else:
             did_collide = True
             
-score = curses.wrapper(game_loop, 9, 11, '^', robot_move)
+score = curses.wrapper(game_loop, robot_move)
 print(score)
-
