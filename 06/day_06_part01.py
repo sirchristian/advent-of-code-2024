@@ -116,5 +116,5 @@ def game_loop(stdscr, move_func = get_move):
         else:
             did_collide = True
             
-score = curses.wrapper(game_loop, robot_move)
+score = curses.wrapper(game_loop) 
 print(score)
