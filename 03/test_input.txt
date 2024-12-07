@@ -1,1 +1,0 @@
-aaa mul(1,1) aaa mul(2,2) aaa don't() mul(3,3) mul(4,4) don't() mul(5,5) do() mul(6,6)
