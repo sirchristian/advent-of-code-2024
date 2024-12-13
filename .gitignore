@@ -163,3 +163,10 @@ cython_debug/
 
 output.txt
 *input.txt
+
+# embarassing attempts for day 11
+11/day_11_part02-02.py
+11/day_11_part02-03.py
+11/day_11_part02-04.py
+11/day_11_part02-05.py
+11/day_11_part02.py
